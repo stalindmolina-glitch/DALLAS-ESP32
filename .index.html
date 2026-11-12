@@ -34,10 +34,56 @@
             font-size: 0.8rem;
             font-weight: bold;
             background-color: #d32f2f;
-            margin-bottom: 1.2rem;
+            margin-bottom: 1.5rem;
         }
         .status-badge.connected { 
             background-color: #388e3c; 
+        }
+        h2 {
+            margin-top: 0;
+            font-size: 1.4rem;
+            color: #e0e0e0;
+            margin-bottom: 1.5rem;
+        }
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .btn-menu {
+            padding: 18px;
+            font-size: 1.1rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+        .btn-menu:active {
+            transform: scale(0.98);
+        }
+        .btn-auto {
+            background-color: #0288d1;
+        }
+        .btn-manual {
+            background-color: #f57c00;
+        }
+        .btn-back {
+            background-color: #424242;
+            color: #ddd;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            margin-bottom: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-back:hover {
+            background-color: #555;
         }
         .temp-label {
             font-size: 0.85rem;
@@ -66,7 +112,10 @@
         }
         .rele-status-box {
             margin: 15px 0;
-            font-size: 1rem;
+            font-size: 1.05rem;
+            background-color: #252525;
+            padding: 12px;
+            border-radius: 10px;
         }
         .rele-indicator {
             width: 16px;
@@ -93,34 +142,37 @@
             font-size: 0.95rem;
             color: #ddd;
             display: block;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .mode-buttons {
             display: flex;
             gap: 10px;
         }
-        button {
+        button.control-btn {
             flex: 1;
-            padding: 12px;
+            padding: 14px;
             border: none;
             border-radius: 8px;
             font-weight: bold;
-            font-size: 0.95rem;
+            font-size: 1rem;
             cursor: pointer;
-            background-color: #444;
             color: white;
             transition: 0.2s;
         }
-        button:hover {
+        button.control-btn:hover {
             opacity: 0.9;
-        }
-        button.active { 
-            background-color: #0288d1; 
         }
         button.btn-action { 
             background-color: #00897b; 
             width: 100%; 
-            margin-top: 12px; 
+            margin-top: 12px;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.95rem;
+            cursor: pointer;
         }
         button.btn-action:hover { 
             background-color: #00695c; 
@@ -159,52 +211,82 @@
 <body>
 
 <div class="card">
+    <!-- Estado global de conexión -->
     <div id="connStatus" class="status-badge">Desconectado</div>
-    
-    <div class="temp-label">Temperatura Promedio</div>
-    <div class="temp-display"><span id="tempProm">--</span> °C</div>
 
-    <div class="sub-sensors">
-        <div>Sensor 1: <span id="temp1">--</span> °C</div>
-        <div>Sensor 2: <span id="temp2">--</span> °C</div>
-    </div>
-
-    <div class="rele-status-box">
-        Estado del Relé: <strong id="releTexto" style="color: #aaa;">APAGADO</strong> 
-        <span id="releIndicator" class="rele-indicator"></span>
-    </div>
-
-    <!-- Selector de Modo -->
-    <div class="section">
-        <span class="section-title">Modo de Operación</span>
-        <div class="mode-buttons">
-            <button id="btnAuto" class="active" onclick="cambiarModo('auto')">Automático</button>
-            <button id="btnManual" onclick="cambiarModo('manual')">Manual</button>
+    <!-- ========================================== -->
+    <!-- PANTALLA 1: SELECCIÓN DE MODO              -->
+    <!-- ========================================== -->
+    <div id="vistaInicio">
+        <h2>Seleccione Modo de Operación</h2>
+        <div class="menu-buttons">
+            <button class="btn-menu btn-auto" onclick="abrirVista('auto')">
+                Modo Automático
+            </button>
+            <button class="btn-menu btn-manual" onclick="abrirVista('manual')">
+                Modo Manual
+            </button>
         </div>
     </div>
 
-    <!-- Panel Automático -->
-    <div id="panelAuto" class="section">
-        <span class="section-title">Rango de Activación (Promedio °C)</span>
-        <div class="inputs-group">
-            <div class="input-box">
-                <small>Mínima (°C)</small>
-                <input type="number" id="tempMin" value="20" step="0.5">
-            </div>
-            <div class="input-box">
-                <small>Máxima (°C)</small>
-                <input type="number" id="tempMax" value="28" step="0.5">
-            </div>
+    <!-- ========================================== -->
+    <!-- PANTALLA 2: MODO AUTOMÁTICO                -->
+    <!-- ========================================== -->
+    <div id="vistaAuto" class="hidden">
+        <div style="text-align: left;">
+            <button class="btn-back" onclick="volverInicio()">← Cambiar Modo</button>
         </div>
-        <button class="btn-action" onclick="enviarRango()">Guardar Rango</button>
+
+        <div class="temp-label">Temperatura Promedio</div>
+        <div class="temp-display"><span id="tempProm">--</span> °C</div>
+
+        <div class="sub-sensors">
+            <div>Sensor 1: <span id="temp1">--</span> °C</div>
+            <div>Sensor 2: <span id="temp2">--</span> °C</div>
+        </div>
+
+        <div class="rele-status-box">
+            Estado del Relé: <strong class="releTexto" style="color: #aaa;">APAGADO</strong> 
+            <span class="releIndicator rele-indicator"></span>
+        </div>
+
+        <div class="section">
+            <span class="section-title">Rango de Activación (Promedio °C)</span>
+            <div class="inputs-group">
+                <div class="input-box">
+                    <small>Mínima (°C)</small>
+                    <input type="number" id="tempMin" value="20" step="0.5">
+                </div>
+                <div class="input-box">
+                    <small>Máxima (°C)</small>
+                    <input type="number" id="tempMax" value="28" step="0.5">
+                </div>
+            </div>
+            <button class="btn-action" onclick="enviarRango()">Guardar Rango</button>
+        </div>
     </div>
 
-    <!-- Panel Manual -->
-    <div id="panelManual" class="section hidden">
-        <span class="section-title">Control Manual del Relé</span>
-        <div class="mode-buttons">
-            <button style="background-color: #2e7d32;" onclick="controlManual(true)">ENCENDER</button>
-            <button style="background-color: #c62828;" onclick="controlManual(false)">APAGAR</button>
+    <!-- ========================================== -->
+    <!-- PANTALLA 3: MODO MANUAL                    -->
+    <!-- ========================================== -->
+    <div id="vistaManual" class="hidden">
+        <div style="text-align: left;">
+            <button class="btn-back" onclick="volverInicio()">← Cambiar Modo</button>
+        </div>
+
+        <h2>Control Manual</h2>
+
+        <div class="rele-status-box">
+            Estado Actual: <strong class="releTexto" style="color: #aaa;">APAGADO</strong> 
+            <span class="releIndicator rele-indicator"></span>
+        </div>
+
+        <div class="section">
+            <span class="section-title">Accionar Relé</span>
+            <div class="mode-buttons">
+                <button class="control-btn" style="background-color: #2e7d32;" onclick="controlManual(true)">ENCENDER</button>
+                <button class="control-btn" style="background-color: #c62828;" onclick="controlManual(false)">APAGAR</button>
+            </div>
         </div>
     </div>
 </div>
@@ -232,38 +314,52 @@
         if (topic === topicDatos) {
             const data = JSON.parse(message.toString());
             
+            // Actualizar lecturas en la vista automática
             document.getElementById('tempProm').innerText = data.prom.toFixed(1);
             document.getElementById('temp1').innerText = data.t1 !== null ? data.t1.toFixed(1) : "Error";
             document.getElementById('temp2').innerText = data.t2 !== null ? data.t2.toFixed(1) : "Error";
             
-            const releEl = document.getElementById('releIndicator');
-            const releTxt = document.getElementById('releTexto');
+            // Actualizar indicadores de relé en AMBAS vistas (automática y manual)
+            const indicadores = document.querySelectorAll('.releIndicator');
+            const textos = document.querySelectorAll('.releTexto');
             
-            if (data.rele === 1) {
-                releEl.classList.add('on');
-                releTxt.innerText = "ENCENDIDO";
-                releTxt.style.color = "#00e676";
-            } else {
-                releEl.classList.remove('on');
-                releTxt.innerText = "APAGADO";
-                releTxt.style.color = "#aaa";
-            }
+            indicadores.forEach(el => {
+                if (data.rele === 1) el.classList.add('on');
+                else el.classList.remove('on');
+            });
+
+            textos.forEach(txt => {
+                if (data.rele === 1) {
+                    txt.innerText = "ENCENDIDO";
+                    txt.style.color = "#00e676";
+                } else {
+                    txt.innerText = "APAGADO";
+                    txt.style.color = "#aaa";
+                }
+            });
         }
     });
 
-    function cambiarModo(modo) {
+    // Navegación entre pantallas
+    function abrirVista(modo) {
+        document.getElementById('vistaInicio').classList.add('hidden');
+        
         if (modo === 'auto') {
-            document.getElementById('btnAuto').classList.add('active');
-            document.getElementById('btnManual').classList.remove('active');
-            document.getElementById('panelAuto').classList.remove('hidden');
-            document.getElementById('panelManual').classList.add('hidden');
+            document.getElementById('vistaAuto').classList.remove('hidden');
+            document.getElementById('vistaManual').classList.add('hidden');
         } else {
-            document.getElementById('btnManual').classList.add('active');
-            document.getElementById('btnAuto').classList.remove('active');
-            document.getElementById('panelManual').classList.remove('hidden');
-            document.getElementById('panelAuto').classList.add('hidden');
+            document.getElementById('vistaManual').classList.remove('hidden');
+            document.getElementById('vistaAuto').classList.add('hidden');
         }
+        
+        // Notificar al ESP32 el cambio de modo inmediatamente
         client.publish(topicControl, JSON.stringify({ modo: modo }));
+    }
+
+    function volverInicio() {
+        document.getElementById('vistaAuto').classList.add('hidden');
+        document.getElementById('vistaManual').classList.add('hidden');
+        document.getElementById('vistaInicio').classList.remove('hidden');
     }
 
     function enviarRango() {
