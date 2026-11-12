@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Temperatura ESP32</title>
+    <!-- Librería MQTT.js -->
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .card {
+            background-color: #1e1e1e;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            background-color: #d32f2f;
+            margin-bottom: 1rem;
+        }
+        .status-badge.connected { background-color: #388e3c; }
+        .temp-display {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #4fc3f7;
+        }
+        .led-indicator {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #444;
+            display: inline-block;
+            vertical-align: middle;
+            margin-left: 8px;
+            box-shadow: 0 0 5px #000;
+            transition: all 0.3s;
+        }
+        .led-indicator.on {
+            background-color: #00e676;
+            box-shadow: 0 0 15px #00e676;
+        }
+        .section {
+            background-color: #2c2c2c;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #444;
+            color: white;
+            transition: 0.2s;
+        }
+        button.active { background-color: #0288d1; }
+        button.btn-action { background-color: #00897b; width: 100%; margin-top: 10px; }
+        button.btn-action:hover { background-color: #00695c; }
+        .inputs-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #555;
+            background: #1e1e1e;
+            color: white;
+            text-align: center;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div id="connStatus" class="status-badge">Desconectado</div>
+    <h2>Monitor Dallas DS18B20</h2>
+    
+    <div class="temp-display"><span id="tempVal">--</span> °C</div>
+    <div>Estado LED: <span id="ledIndicator" class="led-indicator"></span></div>
+
+    <!-- Selector de Modo -->
+    <div class="section">
+        <label>Modo de Operación</label>
+        <div class="mode-buttons" style="margin-top: 10px;">
+            <button id="btnAuto" class="active" onclick="cambiarModo('auto')">Automático</button>
+            <button id="btnManual" onclick="cambiarModo('manual')">Manual</button>
+        </div>
+    </div>
+
+    <!-- Panel Automático -->
+    <div id="panelAuto" class="section">
+        <label>Rango de Encendido (°C)</label>
+        <div class="inputs-group">
+            <div>
+                <small>Mínima</small>
+                <input type="number" id="tempMin" value="20" step="0.5">
+            </div>
+            <div>
+                <small>Máxima</small>
+                <input type="number" id="tempMax" value="28" step="0.5">
+            </div>
+        </div>
+        <button class="btn-action" onclick="enviarRango()">Guardar Rango</button>
+    </div>
+
+    <!-- Panel Manual -->
+    <div id="panelManual" class="section hidden">
+        <label>Control Manual del LED</label>
+        <div class="mode-buttons" style="margin-top: 10px;">
+            <button style="background-color: #2e7d32;" onclick="controlManual(true)">ENCENDER</button>
+            <button style="background-color: #c62828;" onclick="controlManual(false)">APAGAR</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // DEBEN COINCIDIR CON EL CÓDIGO DEL ESP32
+    const topicDatos = "mi_proyecto_esp32_9988/datos";
+    const topicControl = "mi_proyecto_esp32_9988/control";
+
+    // Conexión vía WebSockets Seguros (WSS) requerido por GitHub Pages
+    const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
+
+    client.on('connect', () => {
+        const badge = document.getElementById('connStatus');
+        badge.innerText = "Conectado al Broker";
+        badge.classList.add('connected');
+        client.subscribe(topicDatos);
+    });
+
+    client.on('message', (topic, message) => {
+        if (topic === topicDatos) {
+            const data = JSON.parse(message.toString());
+            document.getElementById('tempVal').innerText = data.temp.toFixed(1);
+            
+            const ledEl = document.getElementById('ledIndicator');
+            if (data.led === 1) {
+                ledEl.classList.add('on');
+            } else {
+                ledEl.classList.remove('on');
+            }
+        }
+    });
+
+    function cambiarModo(modo) {
+        if (modo === 'auto') {
+            document.getElementById('btnAuto').classList.add('active');
+            document.getElementById('btnManual').classList.remove('active');
+            document.getElementById('panelAuto').classList.remove('hidden');
+            document.getElementById('panelManual').classList.add('hidden');
+        } else {
+            document.getElementById('btnManual').classList.add('active');
+            document.getElementById('btnAuto').classList.remove('active');
+            document.getElementById('panelManual').classList.remove('hidden');
+            document.getElementById('panelAuto').classList.add('hidden');
+        }
+        client.publish(topicControl, JSON.stringify({ modo: modo }));
+    }
+
+    function enviarRango() {
+        const min = parseFloat(document.getElementById('tempMin').value);
+        const max = parseFloat(document.getElementById('tempMax').value);
+        client.publish(topicControl, JSON.stringify({ modo: 'auto', min: min, max: max }));
+        alert("Rango enviado al ESP32");
+    }
+
+    function controlManual(encender) {
+        client.publish(topicControl, JSON.stringify({ modo: 'manual', ledManual: encender }));
+    }
+</script>
+
+</body>
+</html>
