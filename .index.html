@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Control Dual Dallas ESP32</title>
-    <!-- Librería MQTT.js para conexión WebSockets -->
     <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <style>
         body {
@@ -211,11 +210,9 @@
 </div>
 
 <script>
-    // DEBEN COINCIDIR EXACTAMENTE CON EL CÓDIGO DEL ESP32
-    const topicDatos = "mi_proyecto_esp32_9988/datos";
-    const topicControl = "mi_proyecto_esp32_9988/control";
+    const topicDatos = "stalindmolina/dallas_esp32/datos";
+    const topicControl = "stalindmolina/dallas_esp32/control";
 
-    // Conexión segura WSS (obligatoria para GitHub Pages HTTPS)
     const client = mqtt.connect('wss://broker.hivemq.com:8884/mqtt');
 
     client.on('connect', () => {
